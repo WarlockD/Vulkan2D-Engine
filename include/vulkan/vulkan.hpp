@@ -24833,9 +24833,11 @@ namespace vk
       return m_queue < rhs.m_queue;
     }
 
+	{
     Result submit( uint32_t submitCount, const SubmitInfo* pSubmits, Fence fence ) const;
 #ifndef VULKAN_HPP_DISABLE_ENHANCED_MODE
     ResultValueType<void>::type submit( ArrayProxy<const SubmitInfo> submits, Fence fence ) const;
+	ResultValueType<void>::type submit(const SubmitInfo& submits, Fence fence) const;
 #endif /*VULKAN_HPP_DISABLE_ENHANCED_MODE*/
 
 #ifdef VULKAN_HPP_DISABLE_ENHANCED_MODE

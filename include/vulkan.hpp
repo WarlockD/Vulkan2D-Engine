@@ -3273,7 +3273,16 @@ namespace vk
     uint32_t height;
   };
   static_assert( sizeof( Extent2D ) == sizeof( VkExtent2D ), "struct and wrapper have different size!" );
+};
+namespace std {
+	template<>
+	constexpr const vk::Extent2D& clamp(const vk::Extent2D& v, const vk::Extent2D& lo, const vk::Extent2D& hi) {
+		return vk::Extent2D(clamp(v.width, lo.width, hi.width), clamp(v.height, lo.height, hi.height));
+	}
+}
 
+
+namespace vk {
   struct Extent3D
   {
     Extent3D( uint32_t width_ = 0, uint32_t height_ = 0, uint32_t depth_ = 0 )
@@ -24945,6 +24954,7 @@ namespace vk {
 
     Result submit( uint32_t submitCount, const SubmitInfo* pSubmits, Fence fence ) const;
 #ifndef VULKAN_HPP_DISABLE_ENHANCED_MODE
+	ResultValueType<void>::type submit(const SubmitInfo& submits, Fence fence) const;
     ResultValueType<void>::type submit( ArrayProxy<const SubmitInfo> submits, Fence fence ) const;
 #endif /*VULKAN_HPP_DISABLE_ENHANCED_MODE*/
 
@@ -24992,6 +25002,11 @@ namespace vk {
     return static_cast<Result>( vkQueueSubmit( m_queue, submitCount, reinterpret_cast<const VkSubmitInfo*>( pSubmits ), static_cast<VkFence>( fence ) ) );
   }
 #ifndef VULKAN_HPP_DISABLE_ENHANCED_MODE
+  VULKAN_HPP_INLINE ResultValueType<void>::type Queue::submit(const SubmitInfo& submits, Fence fence) const
+  {
+	  Result result = static_cast<Result>(vkQueueSubmit(m_queue, 1, reinterpret_cast<const VkSubmitInfo*>(&submits), static_cast<VkFence>(fence)));
+	  return createResultValue(result, "vk::Queue::submit");
+  }
   VULKAN_HPP_INLINE ResultValueType<void>::type Queue::submit( ArrayProxy<const SubmitInfo> submits, Fence fence ) const
   {
     Result result = static_cast<Result>( vkQueueSubmit( m_queue, submits.size() , reinterpret_cast<const VkSubmitInfo*>( submits.data() ), static_cast<VkFence>( fence ) ) );
@@ -25032,7 +25047,7 @@ namespace vk {
   VULKAN_HPP_INLINE Result Queue::presentKHR( const PresentInfoKHR & presentInfo ) const
   {
     Result result = static_cast<Result>( vkQueuePresentKHR( m_queue, reinterpret_cast<const VkPresentInfoKHR*>( &presentInfo ) ) );
-    return createResultValue( result, "vk::Queue::presentKHR", { Result::eSuccess, Result::eSuboptimalKHR } );
+    return createResultValue( result, "vk::Queue::presentKHR", { Result::eSuccess, Result::eSuboptimalKHR, Result::eErrorOutOfDateKHR } );
   }
 #endif /*VULKAN_HPP_DISABLE_ENHANCED_MODE*/
 
@@ -26311,6 +26326,31 @@ namespace vk {
     Optional<const AllocationCallbacks> m_allocator;
   };
 #endif /*VULKAN_HPP_NO_SMART_HANDLE*/
+  // Some extra fenchs for map memory
+  
+  template<typename T=uint8_t>
+  class MapMemory : public ArrayProxy<T> {
+  public:
+	  MapMemory(Device device, DeviceMemory memory,  DeviceSize offset , DeviceSize size, MemoryMapFlags flags)
+		  : ArrayProxy<T>(size/sizeof(T), reinterpret_cast<T*>(device.mapMemory(memory, offset, size, flags))), m_device(device), m_memory(memory)
+	  {
+
+	  }
+	  MapMemory(Device device, DeviceMemory memory, size_t element_count)
+		  : ArrayProxy<T>(element_count, reinterpret_cast<T*>(device.mapMemory(memory, 0U, element_count * sizeof(T), MemoryMapFlags()))), m_device(device), m_memory(memory)
+	  {
+	  }
+#if 0
+
+#endif
+	  ~MapMemory() {
+		  m_device.unmapMemory(m_memory);
+	  }
+  private:
+	  Device&m_device;
+	  DeviceMemory m_memory;
+  };
+
 
   VULKAN_HPP_INLINE PFN_vkVoidFunction Device::getProcAddr( const char* pName ) const
   {
@@ -27510,7 +27550,8 @@ namespace vk {
   {
     uint32_t imageIndex;
     Result result = static_cast<Result>( vkAcquireNextImageKHR( m_device, static_cast<VkSwapchainKHR>( swapchain ), timeout, static_cast<VkSemaphore>( semaphore ), static_cast<VkFence>( fence ), &imageIndex ) );
-    return createResultValue( result, imageIndex, "vk::Device::acquireNextImageKHR", { Result::eSuccess, Result::eTimeout, Result::eNotReady, Result::eSuboptimalKHR } );
+   // return createResultValue( result, imageIndex, "vk::Device::acquireNextImageKHR", { Result::eSuccess, Result::eTimeout, Result::eNotReady, Result::eSuboptimalKHR } );
+	return createResultValue(result, imageIndex, "vk::Device::acquireNextImageKHR", { Result::eSuccess, Result::eTimeout, Result::eNotReady, Result::eSuboptimalKHR, vk::Result::eErrorOutOfDateKHR });
   }
 #endif /*VULKAN_HPP_DISABLE_ENHANCED_MODE*/
 
