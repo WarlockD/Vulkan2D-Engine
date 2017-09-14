@@ -233,90 +233,104 @@ namespace vk
   class ArrayProxy
   {
   public:
-    ArrayProxy(std::nullptr_t)
-      : m_count(0)
-      , m_ptr(nullptr)
-    {}
+	  using value_type = T;
+	  using pointer = value_type*;
+	  using const_pointer = const value_type*;
+	  using refrence = value_type&;
+	  using const_refrence = const value_type&;
+	  using iterator = const_pointer;
+	  using const_iterator = const_pointer;
 
-    ArrayProxy(T & ptr)
-      : m_count(1)
-      , m_ptr(&ptr)
-    {}
+	  ArrayProxy(std::nullptr_t)
+		  : m_count(0)
+		  , m_ptr(nullptr)
+	  {}
 
-    ArrayProxy(uint32_t count, T * ptr)
-      : m_count(count)
-      , m_ptr(ptr)
-    {}
+	  ArrayProxy(T & ptr)
+		  : m_count(1)
+		  , m_ptr(&ptr)
+	  {}
 
-    template <size_t N>
-    ArrayProxy(std::array<typename std::remove_const<T>::type, N> & data)
-      : m_count(N)
-      , m_ptr(data.data())
-    {}
+	  ArrayProxy(uint32_t count, T * ptr)
+		  : m_count(count)
+		  , m_ptr(ptr)
+	  {}
 
-    template <size_t N>
-    ArrayProxy(std::array<typename std::remove_const<T>::type, N> const& data)
-      : m_count(N)
-      , m_ptr(data.data())
-    {}
+	  template <size_t N>
+	  ArrayProxy(value_type(&data)[N])
+		  : m_count(N)
+		  , m_ptr(data)
+	  {}
 
-    template <class Allocator = std::allocator<typename std::remove_const<T>::type>>
-    ArrayProxy(std::vector<typename std::remove_const<T>::type, Allocator> & data)
-      : m_count(static_cast<uint32_t>(data.size()))
-      , m_ptr(data.data())
-    {}
+	  template <size_t N>
+	  ArrayProxy(std::array<std::remove_const_t<T>, N> & data)
+		  : m_count(N)
+		  , m_ptr(data.data())
+	  {}
 
-    template <class Allocator = std::allocator<typename std::remove_const<T>::type>>
-    ArrayProxy(std::vector<typename std::remove_const<T>::type, Allocator> const& data)
-      : m_count(static_cast<uint32_t>(data.size()))
-      , m_ptr(data.data())
-    {}
+	  template <size_t N>
+	  ArrayProxy(std::array<std::remove_const_t<T>, N> const& data)
+		  : m_count(N)
+		  , m_ptr(data.data())
+	  {}
 
-    ArrayProxy(std::initializer_list<T> const& data)
-      : m_count(static_cast<uint32_t>(data.end() - data.begin()))
-      , m_ptr(data.begin())
-    {}
+	  template <class Allocator = std::allocator<value_type>>
+	  ArrayProxy(std::vector<value_type, Allocator> & data)
+		  : m_count(static_cast<uint32_t>(data.size()))
+		  , m_ptr(data.data())
+	  {}
 
-    const T * begin() const
-    {
-      return m_ptr;
-    }
+	  template <class Allocator = std::allocator<std::remove_const_t<T>>>
+	  ArrayProxy(std::vector<std::remove_const_t<T>, Allocator> const& data)
+		  : m_count(static_cast<uint32_t>(data.size()))
+		  , m_ptr(data.data())
+	  {}
 
-    const T * end() const
-    {
-      return m_ptr + m_count;
-    }
+	  ArrayProxy(std::initializer_list<T> const& data)
+		  : m_count(static_cast<uint32_t>(data.size()))
+			  , m_ptr(data.begin())
+	  {}
 
-    const T & front() const
-    {
-      assert(m_count && m_ptr);
-      return *m_ptr;
-    }
+	  const_iterator begin() const
+	  {
+		  return m_ptr;
+	  }
 
-    const T & back() const
-    {
-      assert(m_count && m_ptr);
-      return *(m_ptr + m_count - 1);
-    }
+	  const_iterator end() const
+	  {
+		  return m_ptr + m_count;
+	  }
+	
 
-    bool empty() const
-    {
-      return (m_count == 0);
-    }
+	  const_refrence front() const
+	  {
+		  assert(m_count && m_ptr);
+		  return *m_ptr;
+	  }
 
-    uint32_t size() const
-    {
-      return m_count;
-    }
+	  const_refrence back() const
+	  {
+		  assert(m_count && m_ptr);
+		  return *(m_ptr + m_count - 1);
+	  }
 
-    T * data() const
-    {
-      return m_ptr;
-    }
+	  bool empty() const
+	  {
+		  return (m_count == 0);
+	  }
+
+	  uint32_t size() const
+	  {
+		  return m_count;
+	  }
+	  T* data() const
+	  {
+		  return m_ptr;
+	  }
 
   private:
-    uint32_t  m_count;
-    T *       m_ptr;
+	  uint32_t  m_count;
+	  T *       m_ptr;
   };
 #endif
 
@@ -13135,6 +13149,8 @@ namespace vk {
       , pResults( pResults_ )
     {
     }
+	PresentInfoKHR(ArrayProxy<const Semaphore> WaitSemaphores_, ArrayProxy<const SwapchainKHR> Swapchains_, const uint32_t* pImageIndices_ = nullptr, Result* pResults_ = nullptr)
+		: PresentInfoKHR(WaitSemaphores_.size(), WaitSemaphores_.data(), Swapchains_.size(), Swapchains_.data(), pImageIndices_, pResults_) {}
 
     PresentInfoKHR( VkPresentInfoKHR const & rhs )
     {
@@ -24811,7 +24827,8 @@ namespace vk {
       , pSignalSemaphores( pSignalSemaphores_ )
     {
     }
-
+	SubmitInfo(ArrayProxy<const Semaphore> WaitSemaphores_, ArrayProxy<const CommandBuffer> CommandBuffers_, ArrayProxy<const Semaphore> SignalSemaphores_, ArrayProxy<const PipelineStageFlags> WaitDstStageMask_)
+		: SubmitInfo(WaitSemaphores_.size(), WaitSemaphores_.data(), WaitDstStageMask_.data(), CommandBuffers_.size(), CommandBuffers_.data(), SignalSemaphores_.size(), SignalSemaphores_.data()) {}
     SubmitInfo( VkSubmitInfo const & rhs )
     {
       memcpy( this, &rhs, sizeof( SubmitInfo ) );
@@ -26329,15 +26346,15 @@ namespace vk {
   // Some extra fenchs for map memory
   
   template<typename T=uint8_t>
-  class MapMemory : public ArrayProxy<T> {
+  class MapMemory : public ArrayProxy<std::remove_const_t<T>> {
   public:
 	  MapMemory(Device device, DeviceMemory memory,  DeviceSize offset , DeviceSize size, MemoryMapFlags flags)
-		  : ArrayProxy<T>(size/sizeof(T), reinterpret_cast<T*>(device.mapMemory(memory, offset, size, flags))), m_device(device), m_memory(memory)
+		  : ArrayProxy<std::remove_const_t<T>>(size/sizeof(T), reinterpret_cast<T*>(device.mapMemory(memory, offset, size, flags))), m_device(device), m_memory(memory)
 	  {
 
 	  }
 	  MapMemory(Device device, DeviceMemory memory, size_t element_count)
-		  : ArrayProxy<T>(element_count, reinterpret_cast<T*>(device.mapMemory(memory, 0U, element_count * sizeof(T), MemoryMapFlags()))), m_device(device), m_memory(memory)
+		  : ArrayProxy<std::remove_const_t<T>>(static_cast<uint32_t>(element_count), reinterpret_cast<T*>(device.mapMemory(memory, 0U, static_cast<uint32_t>(element_count * sizeof(T)), MemoryMapFlags()))), m_device(device), m_memory(memory)
 	  {
 	  }
 #if 0
@@ -26347,7 +26364,7 @@ namespace vk {
 		  m_device.unmapMemory(m_memory);
 	  }
   private:
-	  Device&m_device;
+	  Device m_device;
 	  DeviceMemory m_memory;
   };
 
