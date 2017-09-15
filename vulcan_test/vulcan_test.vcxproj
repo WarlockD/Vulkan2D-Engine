@@ -163,8 +163,12 @@ C:\VulkanSDK\1.0.57.0\Bin\glslangValidator.exe -V shader_textures.frag -o shader
     </CustomBuildStep>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="debug_stream.cpp" />
+    <ClCompile Include="main.cpp" />
     <ClCompile Include="meh_test.cpp" />
-    <ClCompile Include="texture_mapping.cpp" />
+    <ClCompile Include="old_texture_image.cpp" />
+    <ClCompile Include="old_texture_mapping.cpp" />
+    <ClCompile Include="new_texture_mapping.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\glfw3\glfw3.vcxproj">
@@ -174,6 +178,9 @@ C:\VulkanSDK\1.0.57.0\Bin\glslangValidator.exe -V shader_textures.frag -o shader
   <ItemGroup>
     <None Include="shader_textures.frag" />
     <None Include="shader_textures.vert" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="dbgstream.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

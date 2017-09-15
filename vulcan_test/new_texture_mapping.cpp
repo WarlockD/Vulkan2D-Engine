@@ -5,7 +5,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
-#define STB_IMAGE_IMPLEMENTATION
+
 #include <stb_image.h>
 
 #include <iostream>
@@ -17,7 +17,8 @@
 #include <cstring>
 #include <array>
 #include <set>
-
+#include <sstream>
+#include "dbgstream.h"
 #include <vulkan.hpp>
 
 const int WIDTH = 800;
@@ -38,7 +39,7 @@ const bool enableValidationLayers = true;
 #endif
 
 
-VkResult CreateDebugReportCallbackEXT(VkInstance instance, const VkDebugReportCallbackCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugReportCallbackEXT* pCallback) {
+static  VkResult CreateDebugReportCallbackEXT(VkInstance instance, const VkDebugReportCallbackCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugReportCallbackEXT* pCallback) {
 	auto func = (PFN_vkCreateDebugReportCallbackEXT)vkGetInstanceProcAddr(instance, "vkCreateDebugReportCallbackEXT");
 	if (func != nullptr) {
 		return func(instance, pCreateInfo, pAllocator, pCallback);
@@ -48,7 +49,7 @@ VkResult CreateDebugReportCallbackEXT(VkInstance instance, const VkDebugReportCa
 	}
 }
 
-void DestroyDebugReportCallbackEXT(VkInstance instance, VkDebugReportCallbackEXT callback, const VkAllocationCallbacks* pAllocator) {
+static void DestroyDebugReportCallbackEXT(VkInstance instance, VkDebugReportCallbackEXT callback, const VkAllocationCallbacks* pAllocator) {
 	auto func = (PFN_vkDestroyDebugReportCallbackEXT)vkGetInstanceProcAddr(instance, "vkDestroyDebugReportCallbackEXT");
 	if (func != nullptr) {
 		func(instance, callback, pAllocator);
@@ -115,14 +116,14 @@ struct UniformBufferObject {
     glm::mat4 proj;
 };
 
-const std::vector<Vertex> vertices = {
+static const std::vector<Vertex> vertices = {
     {{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
     {{0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f}},
     {{0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}, {0.0f, 1.0f}},
     {{-0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}}
 };
 
-const std::vector<uint16_t> indices = {
+static const std::vector<uint16_t> indices = {
     0, 1, 2, 2, 3, 0
 };
 
@@ -690,9 +691,9 @@ private:
 		createBuffer(imageSize, vk::BufferUsageFlagBits::eTransferSrc, vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent, stagingBuffer, stagingBufferMemory);
 
 		{
-			vk::DeviceSize element_count = texWidth * texHeight;
-			vk::MapMemory<stbi_uc> data(device, stagingBufferMemory, element_count);
-			::memcpy(data.data(), pixels, imageSize);
+			void * data = device.mapMemory(stagingBufferMemory, 0, imageSize);
+			::memcpy(data, pixels, imageSize);
+			device.unmapMemory(stagingBufferMemory);
  			//std::copy(pixels, pixels + element_count, data.begin());
 		}
 
@@ -751,7 +752,7 @@ private:
         return device.createImageView(viewInfo);
     }
 
-    void createImage(uint32_t width, uint32_t height, vk::Format format, vk::ImageTiling tiling, vk::ImageUsageFlags usage, vk::MemoryPropertyFlags properties, vk::Image& image, vk::DeviceMemory& imageMemory) {
+    void  createImage(uint32_t width, uint32_t height, vk::Format format, vk::ImageTiling tiling, vk::ImageUsageFlags usage, vk::MemoryPropertyFlags properties, vk::Image& image, vk::DeviceMemory& imageMemory) {
         vk::ImageCreateInfo imageInfo;
         
         imageInfo.imageType = vk::ImageType::e2D; 
@@ -1030,7 +1031,7 @@ private:
         auto currentTime = std::chrono::high_resolution_clock::now();
         float time = std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - startTime).count() / 1000.0f;
 
-        UniformBufferObject ubo = {};
+		UniformBufferObject ubo;
         ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
         ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
         ubo.proj = glm::perspective(glm::radians(45.0f), swapChainExtent.width / (float) swapChainExtent.height, 0.1f, 10.0f);
@@ -1247,13 +1248,16 @@ private:
     }
 };
 
-int main() {
+
+int new_texture_mapping() {
     HelloTriangleApplication app;
 
     try {
         app.run();
     } catch (const std::runtime_error& e) {
-        std::cerr << e.what() << std::endl;
+
+		dbg << e.what() << std::endl;
+
         return EXIT_FAILURE;
     }
 
